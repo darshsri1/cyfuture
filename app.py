@@ -31,8 +31,7 @@ generate_btn = st.button("Generate Image")
 # Image Generation
 if generate_btn:
     with st.spinner("Generating Image..."):
-        with torch.inference_mode():
-            image = pipe(prompt, guidance_scale=guidance_scale).images[0]
+        image = pipe(prompt, guidance_scale=guidance_scale).images[0]
         image.save("generated_image.png")
         
         # Display the generated image
