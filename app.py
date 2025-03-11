@@ -5,8 +5,14 @@ from io import BytesIO
 import asyncio
 
 # Ensure the event loop is set up correctly
-if not asyncio.get_event_loop().is_running():
-    asyncio.set_event_loop(asyncio.new_event_loop())
+try:
+    loop = asyncio.get_event_loop()
+except RuntimeError as e:
+    if "no current event loop" in str(e):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    else:
+        raise e
 
 # Page Configuration
 st.set_page_config(page_title="Stable Bud - AI Image Generator", layout="centered")
