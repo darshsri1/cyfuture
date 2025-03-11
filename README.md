@@ -34,3 +34,6 @@ https://colab.research.google.com/drive/1zklOJ1IGKrbTez9jJukOUT5mkf8JFJuc#scroll
 🚀 Start generating AI-powered images now with CyFuture! 🚀
 deployed in streamlit:-
 https://cyfuture-d595cwhczmcv7ktwrr5ajr.streamlit.app/
+demo working model
+![image](https://github.com/user-attachments/assets/a100b741-7bfd-4491-b7d8-54029c663483)
+
