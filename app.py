@@ -2,6 +2,7 @@ import streamlit as st
 from PIL import Image
 import torch
 from diffusers import StableDiffusionPipeline
+from io import BytesIO
 
 # Authentication token for Hugging Face
 from authtoken import auth_token
@@ -13,40 +14,45 @@ st.title("🌟 Stable Bud - AI Image Generator")
 # Load Model
 @st.cache_resource()
 def load_model():
-    model_id = "stabilityai/stable-diffusion-2-1-base"  # Lighter and optimized model
+    model_id = "stabilityai/stable-diffusion-2-1-base"
     device = "cuda" if torch.cuda.is_available() else "cpu"
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
     
     pipe = StableDiffusionPipeline.from_pretrained(
         model_id, 
         torch_dtype=torch_dtype, 
-        token=auth_token  # Updated to use 'token' instead of 'use_auth_token'
+        use_auth_token=auth_token  # Corrected usage
     )
     pipe.to(device)
-    pipe.enable_attention_slicing()  # Reduce VRAM usage
-    return pipe, device
+    pipe.enable_attention_slicing()
+    pipe.enable_model_cpu_offload()  # Further VRAM optimization
+    return pipe
 
-pipe, device = load_model()
+pipe = load_model()
 
 # UI Elements
 prompt = st.text_input("Enter a prompt:", "A fantasy landscape with castles and dragons")
-guidance_scale = st.slider("Guidance Scale:", min_value=1.0, max_value=20.0, value=8.5, step=0.5)
+guidance_scale = st.slider("Guidance Scale:", 1.0, 20.0, 8.5, 0.5)
 generate_btn = st.button("Generate Image")
 
 # Image Generation
 if generate_btn:
     with st.spinner("Generating Image..."):
-        image = pipe(prompt, guidance_scale=guidance_scale, height=512, width=512).images[0]  # Reduce image size
-        image.save("generated_image.png")
+        image = pipe(prompt, guidance_scale=guidance_scale, height=512, width=512).images[0]
         
-        # Display the generated image
+        # Convert image to bytes
+        img_bytes = BytesIO()
+        image.save(img_bytes, format="PNG")
+        img_bytes.seek(0)
+
+        # Display Image
         st.image(image, caption="Generated Image", use_column_width=True)
-        st.success("Image generated successfully!")
+        st.success("✅ Image generated successfully!")
 
         # Download Option
-        with open("generated_image.png", "rb") as file:
-            st.download_button("Download Image", file, "generated_image.png", "image/png")
+        st.download_button("📥 Download Image", img_bytes, "generated_image.png", "image/png")
     
     # Free memory
     del image
     torch.cuda.empty_cache()
+
