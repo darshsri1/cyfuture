@@ -1,11 +1,7 @@
 import streamlit as st
 from PIL import Image
-import torch
 from diffusers import StableDiffusionPipeline
 from io import BytesIO
-
-# Authentication token for Hugging Face
-from authtoken import auth_token
 
 # Page Configuration
 st.set_page_config(page_title="Stable Bud - AI Image Generator", layout="centered")
@@ -14,22 +10,10 @@ st.title("🌟 Stable Bud - AI Image Generator")
 # Load Model
 @st.cache_resource()
 def load_model():
-    model_id = "stabilityai/stable-diffusion-2-1-base"
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
-    
+    model_id = "CompVis/stable-diffusion-v1-4"  # Smaller model for CPU
     try:
-        pipe = StableDiffusionPipeline.from_pretrained(
-            model_id, 
-            torch_dtype=torch_dtype, 
-            use_auth_token=auth_token  # Corrected keyword
-        )
-        pipe.to(device)
-        pipe.enable_attention_slicing()  # Reduce VRAM usage
-        
-        if torch.cuda.is_available():
-            pipe.enable_model_cpu_offload()  # Use only for low VRAM GPUs
-
+        pipe = StableDiffusionPipeline.from_pretrained(model_id)
+        pipe.to("cpu")  # Force CPU usage
         return pipe
     except Exception as e:
         st.error(f"Failed to load the model: {e}")
@@ -39,15 +23,15 @@ pipe = load_model()
 
 # UI Elements
 prompt = st.text_input("Enter a prompt:", "A fantasy landscape with castles and dragons")
-guidance_scale = st.slider("Guidance Scale:", 1.0, 20.0, 8.5, 0.5)
+guidance_scale = st.slider("Guidance Scale:", 1.0, 20.0, 7.5, 0.5)
 generate_btn = st.button("Generate Image")
 
 # Image Generation
 if generate_btn and pipe is not None:
     with st.spinner("Generating Image..."):
         try:
-            # Generate image
-            image = pipe(prompt, guidance_scale=guidance_scale, height=512, width=512).images[0]
+            # Generate image (lower resolution for CPU)
+            image = pipe(prompt, guidance_scale=guidance_scale, height=256, width=256).images[0]
             
             # Convert image to bytes
             img_bytes = BytesIO()
@@ -63,7 +47,3 @@ if generate_btn and pipe is not None:
         
         except Exception as e:
             st.error(f"Error generating image: {e}")
-        
-        # Free memory
-        del image
-        torch.cuda.empty_cache()
