@@ -13,15 +13,17 @@ st.title("🌟 Stable Bud - AI Image Generator")
 # Load Model
 @st.cache_resource()
 def load_model():
-    model_id = "runwayml/stable-diffusion-v1-5"  # Faster and optimized model
+    model_id = "stabilityai/stable-diffusion-2-1-base"  # Lighter and optimized model
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+    
     pipe = StableDiffusionPipeline.from_pretrained(
         model_id, 
-        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32, 
-        token=auth_token,  # Updated to use 'token' instead of 'use_auth_token'
-        force_download=True  # Ensures model files are properly downloaded
+        torch_dtype=torch_dtype, 
+        token=auth_token  # Updated to use 'token' instead of 'use_auth_token'
     )
     pipe.to(device)
+    pipe.enable_attention_slicing()  # Reduce VRAM usage
     return pipe, device
 
 pipe, device = load_model()
@@ -34,7 +36,7 @@ generate_btn = st.button("Generate Image")
 # Image Generation
 if generate_btn:
     with st.spinner("Generating Image..."):
-        image = pipe(prompt, guidance_scale=guidance_scale).images[0]
+        image = pipe(prompt, guidance_scale=guidance_scale, height=512, width=512).images[0]  # Reduce image size
         image.save("generated_image.png")
         
         # Display the generated image
@@ -44,3 +46,7 @@ if generate_btn:
         # Download Option
         with open("generated_image.png", "rb") as file:
             st.download_button("Download Image", file, "generated_image.png", "image/png")
+    
+    # Free memory
+    del image
+    torch.cuda.empty_cache()
