@@ -1,40 +1,44 @@
-import tkinter as tk
-import customtkinter as ctk 
+import streamlit as st
+from PIL import Image
+import torch
+from diffusers import StableDiffusionPipeline
 
-from PIL import ImageTk
+# Authentication token for Hugging Face
 from authtoken import auth_token
 
-import torch
-from torch import autocast
-from diffusers import StableDiffusionPipeline 
+# Page Configuration
+st.set_page_config(page_title="Stable Bud - AI Image Generator", layout="centered")
+st.title("🌟 Stable Bud - AI Image Generator")
 
-# Create the app
-app = tk.Tk()
-app.geometry("532x632")
-app.title("Stable Bud") 
-ctk.set_appearance_mode("dark") 
+# Load Model
+@st.cache_resource()
+def load_model():
+    model_id = "CompVis/stable-diffusion-v1-4"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    pipe = StableDiffusionPipeline.from_pretrained(
+        model_id, revision="fp16", torch_dtype=torch.float16, use_auth_token=auth_token
+    )
+    pipe.to(device)
+    return pipe, device
 
-prompt = ctk.CTkEntry(height=40, width=512, text_font=("Arial", 20), text_color="black", fg_color="white") 
-prompt.place(x=10, y=10)
+pipe, device = load_model()
 
-lmain = ctk.CTkLabel(height=512, width=512)
-lmain.place(x=10, y=110)
+# UI Elements
+prompt = st.text_input("Enter a prompt:", "A fantasy landscape with castles and dragons")
+guidance_scale = st.slider("Guidance Scale:", min_value=1.0, max_value=20.0, value=8.5, step=0.5)
+generate_btn = st.button("Generate Image")
 
-modelid = "CompVis/stable-diffusion-v1-4"
-device = "cuda"
-pipe = StableDiffusionPipeline.from_pretrained(modelid, revision="fp16", torch_dtype=torch.float16, use_auth_token=auth_token) 
-pipe.to(device) 
+# Image Generation
+if generate_btn:
+    with st.spinner("Generating Image..."):
+        with torch.inference_mode():
+            image = pipe(prompt, guidance_scale=guidance_scale).images[0]
+        image.save("generated_image.png")
+        
+        # Display the generated image
+        st.image(image, caption="Generated Image", use_column_width=True)
+        st.success("Image generated successfully!")
 
-def generate(): 
-    with autocast(device): 
-        image = pipe(prompt.get(), guidance_scale=8.5)["sample"][0]
-    
-    image.save('generatedimage.png')
-    img = ImageTk.PhotoImage(image)
-    lmain.configure(image=img) 
-
-trigger = ctk.CTkButton(height=40, width=120, text_font=("Arial", 20), text_color="white", fg_color="blue", command=generate) 
-trigger.configure(text="Generate") 
-trigger.place(x=206, y=60) 
-
-app.mainloop()
+        # Download Option
+        with open("generated_image.png", "rb") as file:
+            st.download_button("Download Image", file, "generated_image.png", "image/png")
