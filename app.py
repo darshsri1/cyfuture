@@ -13,10 +13,13 @@ st.title("🌟 Stable Bud - AI Image Generator")
 # Load Model
 @st.cache_resource()
 def load_model():
-    model_id = "stabilityai/stable-diffusion-2-1"  # Faster & better quality
+    model_id = "runwayml/stable-diffusion-v1-5"  # Faster and optimized model
     device = "cuda" if torch.cuda.is_available() else "cpu"
     pipe = StableDiffusionPipeline.from_pretrained(
-        model_id, revision="fp16", torch_dtype=torch.float16, use_auth_token=auth_token
+        model_id, 
+        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32, 
+        token=auth_token,  # Updated to use 'token' instead of 'use_auth_token'
+        force_download=True  # Ensures model files are properly downloaded
     )
     pipe.to(device)
     return pipe, device
