@@ -2,6 +2,11 @@ import streamlit as st
 from PIL import Image
 from diffusers import StableDiffusionPipeline
 from io import BytesIO
+import asyncio
+
+# Ensure the event loop is set up correctly
+if not asyncio.get_event_loop().is_running():
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 # Page Configuration
 st.set_page_config(page_title="Stable Bud - AI Image Generator", layout="centered")
@@ -10,7 +15,7 @@ st.title("🌟 Stable Bud - AI Image Generator")
 # Load Model
 @st.cache_resource()
 def load_model():
-    model_id = "CompVis/stable-diffusion-v1-4"  # Smaller model for CPU
+    model_id = "CompVis/stable-diffusion-v1-4"  # Public model, no auth token needed
     try:
         pipe = StableDiffusionPipeline.from_pretrained(model_id)
         pipe.to("cpu")  # Force CPU usage
