@@ -18,18 +18,22 @@ def load_model():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
     
-    pipe = StableDiffusionPipeline.from_pretrained(
-        model_id, 
-        torch_dtype=torch_dtype, 
-        token=auth_token  # Corrected keyword
-    )
-    pipe.to(device)
-    pipe.enable_attention_slicing()  # Reduce VRAM usage
-    
-    if torch.cuda.is_available():
-        pipe.enable_model_cpu_offload()  # Use only for low VRAM GPUs
+    try:
+        pipe = StableDiffusionPipeline.from_pretrained(
+            model_id, 
+            torch_dtype=torch_dtype, 
+            use_auth_token=auth_token  # Corrected keyword
+        )
+        pipe.to(device)
+        pipe.enable_attention_slicing()  # Reduce VRAM usage
+        
+        if torch.cuda.is_available():
+            pipe.enable_model_cpu_offload()  # Use only for low VRAM GPUs
 
-    return pipe
+        return pipe
+    except Exception as e:
+        st.error(f"Failed to load the model: {e}")
+        return None
 
 pipe = load_model()
 
@@ -39,22 +43,27 @@ guidance_scale = st.slider("Guidance Scale:", 1.0, 20.0, 8.5, 0.5)
 generate_btn = st.button("Generate Image")
 
 # Image Generation
-if generate_btn:
+if generate_btn and pipe is not None:
     with st.spinner("Generating Image..."):
-        image = pipe(prompt, guidance_scale=guidance_scale, height=512, width=512).images[0]
+        try:
+            # Generate image
+            image = pipe(prompt, guidance_scale=guidance_scale, height=512, width=512).images[0]
+            
+            # Convert image to bytes
+            img_bytes = BytesIO()
+            image.save(img_bytes, format="PNG")
+            img_bytes.seek(0)
+
+            # Display Image
+            st.image(image, caption="Generated Image", use_column_width=True)
+            st.success("✅ Image generated successfully!")
+
+            # Download Option
+            st.download_button("📥 Download Image", img_bytes, "generated_image.png", "image/png")
         
-        # Convert image to bytes
-        img_bytes = BytesIO()
-        image.save(img_bytes, format="PNG")
-        img_bytes.seek(0)
-
-        # Display Image
-        st.image(image, caption="Generated Image", use_column_width=True)
-        st.success("✅ Image generated successfully!")
-
-        # Download Option
-        st.download_button("📥 Download Image", img_bytes, "generated_image.png", "image/png")
-    
-    # Free memory
-    del image
-    torch.cuda.empty_cache()
+        except Exception as e:
+            st.error(f"Error generating image: {e}")
+        
+        # Free memory
+        del image
+        torch.cuda.empty_cache()
