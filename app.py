@@ -13,7 +13,7 @@ st.title("🌟 Stable Bud - AI Image Generator")
 # Load Model
 @st.cache_resource()
 def load_model():
-    model_id = "stabilityai/stable-diffusion-2-1-base"
+    model_id = "stabilityai/stable-diffusion-2-1"
     device = "cuda" if torch.cuda.is_available() else "cpu"
     pipe = StableDiffusionPipeline.from_pretrained(
         model_id, revision="fp16", torch_dtype=torch.float16, use_auth_token=auth_token
