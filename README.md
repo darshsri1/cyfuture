@@ -32,4 +32,5 @@ https://colab.research.google.com/drive/1zklOJ1IGKrbTez9jJukOUT5mkf8JFJuc#scroll
 🎨 Interactive Interface – Use the app directly in the notebook.
 
 🚀 Start generating AI-powered images now with CyFuture! 🚀
-
+deployed in streamlit:-
+https://cyfuture-d595cwhczmcv7ktwrr5ajr.streamlit.app/
